@@ -16,23 +16,29 @@
   // Intercept map clicks
   document.addEventListener('click', function(e) {
     const target = e.target;
-    const link = target.closest('a, button, div, span');
+    const link = target.closest('a');
     
-    const isMapClick = 
-      target.alt === 'map' ||
-      target.src?.includes('external-content.duckduckgo.com/ssv2') ||
-      (link && (
-        link.href?.includes('iaxm=maps') ||
-        link.href?.includes('ia=maps') ||
-        (link.textContent?.toLowerCase().includes('maps') && 
-         !link.href?.includes('google.com'))
-      ));
+    // Check if this is a map-related click
+    const isMapImage = target.alt === 'map' || target.src?.includes('external-content.duckduckgo.com/ssv2');
+    const isMapLink = link && link.href && (
+      link.href.includes('iaxm=maps') ||
+      link.href.includes('ia=maps')
+    );
     
-    if (isMapClick) {
+    if (isMapLink || isMapImage) {
       e.preventDefault();
       e.stopPropagation();
       
-      const query = new URLSearchParams(window.location.search).get('q');
+      // Try to extract query from the link first, then fall back to current page query
+      let query = null;
+      if (link && link.href) {
+        const linkUrl = new URL(link.href);
+        query = linkUrl.searchParams.get('q');
+      }
+      if (!query) {
+        query = new URLSearchParams(window.location.search).get('q');
+      }
+      
       if (query) {
         window.location.href = 'https://www.google.com/maps/search/' + encodeURIComponent(query);
       }
